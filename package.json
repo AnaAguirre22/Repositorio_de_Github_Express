@@ -1,0 +1,24 @@
+{
+  "name": "repositorio_de_github_express",
+  "version": "1.0.0",
+  "description": "Repositorio para actividades relacionadas a reacts, utilizando herramientas como GitHub, Node y Express.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnaAguirre22/Repositorio_de_Github_Express.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/AnaAguirre22/Repositorio_de_Github_Express/issues"
+  },
+  "homepage": "https://github.com/AnaAguirre22/Repositorio_de_Github_Express#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
