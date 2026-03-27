@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/AnaAguirre22/Repositorio_de_Github_Express#readme",
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "pg": "^8.20.0"
   }
 }

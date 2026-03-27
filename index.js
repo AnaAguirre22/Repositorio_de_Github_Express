@@ -1,20 +1,19 @@
 const express = require('express');
+const pool = require('./db'); 
 const app = express();
 const port = 3000;
 
 app.get('/', (req, res) => {
-  res.send('API funcionando correctamente');
+  res.send('API funcionando y lista para PostgreSQL');
 });
 
-app.get('/usuario', (req, res) => {
-  const usuario = {
-    id: 1,
-    nombre: 'Ana Aguirre', 
-    rol: 'Estudiante de Informática UAS'
-  };
-
-  res.json(usuario);
-});
+pool.connect()
+  .then(() => {
+    console.log('Conexión exitosa a PostgreSQL');
+  })
+  .catch((err) => {
+    console.error('Error de conexión', err);
+  });
 
 app.listen(port, () => {
   console.log(`Servidor corriendo en http://localhost:${port}`);
