@@ -13,7 +13,7 @@ pool.connect()
   });
 
 app.get('/', (req, res) => {
-  res.send('API funcionando');
+  res.send('API funcionando correctamente');
 });
 
 app.get('/alumnos', async (req, res) => {
@@ -34,13 +34,11 @@ app.post('/alumnos', async (req, res) => {
       return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
 
-    // Consulta para insertar en PostgreSQL
     const resultado = await pool.query(
       'INSERT INTO alumno (nombre, apellido, edad, correo) VALUES ($1, $2, $3, $4) RETURNING *',
       [nombre, apellido, edad, correo]
     );
 
-    // Respuesta exitosa
     res.status(201).json({
       mensaje: 'Alumno insertado correctamente',
       alumno: resultado.rows[0]
@@ -51,7 +49,39 @@ app.post('/alumnos', async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log('Servidor corriendo en http://localhost:3000');
+app.get('/materias', async (req, res) => {
+  try {
+    const resultado = await pool.query('SELECT * FROM materia');
+    res.json(resultado.rows);
+  } catch (error) {
+    console.error('Error al consultar materias:', error);
+    res.status(500).json({ error: 'Error al obtener las materias' });
+  }
 });
 
+app.post('/materias', async (req, res) => {
+  try {
+    const { nombre, semestre, creditos } = req.body;
+
+    if (!nombre || !semestre || !creditos) {
+      return res.status(400).json({ error: 'Todos los campos (nombre, semestre, creditos) son obligatorios' });
+    }
+
+    const resultado = await pool.query(
+      'INSERT INTO materia (nombre, semestre, creditos) VALUES ($1, $2, $3) RETURNING *',
+      [nombre, semestre, creditos]
+    );
+
+    res.status(201).json({
+      mensaje: 'Materia insertada correctamente',
+      materia: resultado.rows[0]
+    });
+  } catch (error) {
+    console.error('Error al insertar materia:', error);
+    res.status(500).json({ error: 'Error al insertar la materia' });
+  }
+});
+
+app.listen(3000, () => {
+  console.log('🚀 Servidor corriendo en http://localhost:3000');
+});
