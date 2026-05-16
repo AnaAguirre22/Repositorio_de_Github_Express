@@ -30,72 +30,157 @@ app.get('/', (req, res) => {
   res.send('API del Proyecto Final corriendo con PostgreSQL y MongoDB');
 });
 
-// 2. SECCIÓN: ALUMNOS (Le toca a ti Fatima)
+// SECCIÓN 2: ALUMNOS (Módulo de Fátima)
 
-// Fatima: aqui debes modificar este GET para que funcione la "eliminacion logica"
-// El profe pidio que solo muestre alumnos activos. agrega un "WHERE isActive = true" en tu SQL
-app.get('/alumnos', async (req, res) => {
+// 1. Consultar todos los alumnos activos
+app.get('/api/getAlumnos', async (req, res) => {
   try {
-    const resultado = await pool.query('SELECT * FROM alumno');
-    res.json(resultado.rows);
+    const resultado = await pool.query('SELECT * FROM alumno WHERE isactive = true');
+    res.status(200).json({
+      message: "Alumnos encontrados correctamente",
+      data: resultado.rows
+    });
   } catch (error) {
     console.error('Error al consultar alumnos:', error);
-    res.status(500).json({ error: 'Error al obtener los alumnos' });
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
-// Fatima Este es el GET para buscar por ID.
-// Tienes que asegurar que valide que el ID sea numerico (ya esta) y que el alumno este activo (falta el WHERE)
-app.get('/alumnos/:id', async (req, res) => {
+// 2. Consultar alumno por ID (Solo si está activo)
+app.get('/api/getAlumnoById/:id', async (req, res) => {
   try {
-    const { id } = req.params; 
-    
-    // Jona y/o Fatima: validacion basica para que la base de datos no truene si mandan texto
+    const { id } = req.params;
+
     if (isNaN(id)) {
-      return res.status(400).json({ error: 'El id debe ser numérico' });
+      return res.status(400).json({ message: 'El ID del alumno debe ser numérico' });
     }
-    
-    const resultado = await pool.query('SELECT * FROM alumno WHERE id = $1', [id]);
-    
+
+    const resultado = await pool.query(
+      'SELECT * FROM alumno WHERE id = $1 AND isactive = true',
+      [id]
+    );
+
     if (resultado.rows.length === 0) {
-      return res.status(404).json({ error: 'Alumno no encontrado' });
+      return res.status(404).json({ message: 'Alumno no encontrado o inactivo' });
     }
-    res.json(resultado.rows[0]);
+
+    res.status(200).json({
+      message: "Alumno encontrado correctamente",
+      data: resultado.rows[0]
+    });
   } catch (error) {
-    console.error('Error al consultar alumno:', error);
-    res.status(500).json({ error: 'Error al obtener el alumno' });
+    console.error(error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
-// Fatima esste es para crear un alumno (POST)
-// Asegurate de que pida todos los campos necesarios
-app.post('/alumnos', async (req, res) => {
+// 3. Buscar alumno por nombre o apellido usando LIKE
+app.get('/api/searchAlumno', async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    if (!query || query.trim() === "") {
+      return res.status(400).json({ message: 'El parámetro de búsqueda es obligatorio' });
+    }
+
+    const busquedaEfectiva = `%${query}%`;
+    const resultado = await pool.query(
+      'SELECT * FROM alumno WHERE (nombre LIKE $1 OR apellido LIKE $1) AND isactive = true',
+      [busquedaEfectiva]
+    );
+
+    res.status(200).json({
+      message: "Búsqueda realizada con éxito",
+      data: resultado.rows
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// 4. Crear alumno (POST)
+app.post('/api/createAlumno', async (req, res) => {
   try {
     const { nombre, apellido, edad, correo } = req.body;
-    
-    // Jona y/o Fatima: validacion de que no vengan campos vacios
+
     if (!nombre || !apellido || !edad || !correo) {
-      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+      return res.status(400).json({ message: 'Todos los campos son obligatorios' });
     }
-    
+
     const resultado = await pool.query(
       'INSERT INTO alumno (nombre, apellido, edad, correo) VALUES ($1, $2, $3, $4) RETURNING *',
       [nombre, apellido, edad, correo]
     );
+
     res.status(201).json({
-      mensaje: 'Alumno insertado correctamente',
-      alumno: resultado.rows[0]
+      message: 'Alumno insertado correctamente',
+      data: resultado.rows[0]
     });
   } catch (error) {
-    console.error('Error al insertar alumno:', error);
-    res.status(500).json({ error: 'Error al insertar el alumno' });
+    console.error(error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
-// FATIMAAA AQUI DEBES AGREGAR TUS DOS ENDPOINTS FALTANTES:
-// 1. El PUT para actualizar alumno (/api/updateAlumno/:id)
-// 2. El DELETE para la eliminación lógica (/api/deleteAlumno/:id) -> Acuerdate que NO es un DELETE real, es un UPDATE para cambiar isActive = false
-// 3. El GET con la consulta LIKE para buscar alumnos por nombre o apellido (/api/searchAlumno?query=...)
+// 5. Modificar el alumno (PUT)
+app.put('/api/updateAlumno/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, apellido, edad, correo } = req.body;
+
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'El ID debe ser numérico' });
+    }
+    if (!nombre || !apellido || !edad || !correo) {
+      return res.status(400).json({ message: 'Todos los campos son obligatorios para actualizar' });
+    }
+
+    const verificar = await pool.query('SELECT * FROM alumno WHERE id = $1 AND isactive = true', [id]);
+    if (verificar.rows.length === 0) {
+      return res.status(404).json({ message: 'El alumno no existe o está inactivo' });
+    }
+
+    const resultado = await pool.query(
+      'UPDATE alumno SET nombre = $1, apellido = $2, edad = $3, correo = $4 WHERE id = $5 RETURNING *',
+      [nombre, apellido, edad, correo, id]
+    );
+
+    res.status(200).json({
+      message: "Alumno modificado correctamente",
+      data: resultado.rows[0]
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// 6. Eliminar alumno de manera lógica (DELETE)
+app.delete('/api/deleteAlumno/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (isNaN(id)) {
+      return res.status(400).json({ message: 'El ID debe ser numérico' });
+    }
+
+    const verificar = await pool.query('SELECT * FROM alumno WHERE id = $1 AND isactive = true', [id]);
+    if (verificar.rows.length === 0) {
+      return res.status(404).json({ message: 'El alumno no existe o ya estaba inactivo' });
+    }
+
+    // UPDATE en vez de DELETE físico
+    await pool.query('UPDATE alumno SET isactive = false WHERE id = $1', [id]);
+
+    res.status(200).json({
+      message: "Alumno eliminado de manera lógica correctamente"
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
 
 
 // 3. SECCIÓN: MATERIAS (Le toca a JAASIEL)
