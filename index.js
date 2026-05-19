@@ -229,6 +229,85 @@ app.post('/materias', async (req, res) => {
 // 2. El GET para ver que materias tiene asignadas un alumno (/api/getMateriasByAlumnoId/:id)
 // 3. El GET para contar cuantas materias tiene un alumno (/api/getMateriasCountByAlumnoId/:id) usando COUNT en SQL
 
+// Jaasiel: Endpoint para inscribir una materia a un alumno (POST)
+app.post('/api/assignMateriaToAlumno', async (req, res) => {
+    const { alumno_id, materia_id } = req.body;
+
+    if (!alumno_id || !materia_id) {
+        return res.status(400).json({ error: 'alumno_id y materia_id son obligatorios' });
+    }
+
+    try {
+        // Validación: Revisar si ya existe la relación para no duplicar
+        const existe = await pool.query(
+            'SELECT * FROM alumno_materia WHERE alumno_id = $1 AND materia_id = $2',
+            [alumno_id, materia_id]
+        );
+
+        if (existe.rows.length > 0) {
+            return res.status(400).json({ error: 'El alumno ya tiene inscrita esta materia' });
+        }
+
+        // Insertar la nueva relación
+        const resultado = await pool.query(
+            'INSERT INTO alumno_materia (alumno_id, materia_id) VALUES ($1, $2) RETURNING *',
+            [alumno_id, materia_id]
+        );
+
+        res.status(201).json({ mensaje: 'Materia inscrita con éxito', data: resultado.rows[0] });
+    } catch (error) {
+        console.error('Error al inscribir materia:', error);
+        res.status(500).json({ error: 'Error interno del servidor al inscribir materia' });
+    }
+});
+
+// Jaasiel: Obtener las materias de un alumno específico (GET)
+app.get('/api/getMateriasByAlumnoId/:id', async (req, res) => {
+    const alumnoId = req.params.id;
+
+    try {
+        const resultado = await pool.query(
+            `SELECT m.id, m.nombre, m.semestre, m.creditos 
+             FROM materia m
+             JOIN alumno_materia am ON m.id = am.materia_id
+             WHERE am.alumno_id = $1`,
+            [alumnoId]
+        );
+
+        res.json(resultado.rows);
+    } catch (error) {
+        console.error('Error al obtener materias del alumno:', error);
+        res.status(500).json({ error: 'Error al obtener las materias' });
+    }
+});
+
+// Jaasiel: Contar cuántas materias tiene asignadas un alumno (GET)
+app.get('/api/getMateriasCountByAlumnoId/:id', async (req, res) => {
+    const alumnoId = req.params.id;
+
+    try {
+        const resultado = await pool.query(
+            'SELECT COUNT(materia_id) as total_materias FROM alumno_materia WHERE alumno_id = $1',
+            [alumnoId]
+        );
+
+        res.json({
+            alumno_id: alumnoId,
+            total_materias: parseInt(resultado.rows[0].total_materias)
+        });
+    } catch (error) {
+        console.error('Error al contar materias:', error);
+        res.status(500).json({ error: 'Error al contar las materias' });
+    }
+});
+
+
+
+
+
+
+
+
 
 // 5. SECCIÓN: VEHICULOS - MONGOOSE Y MONGO DB (Le toca a el JONA)
 
