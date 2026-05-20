@@ -237,7 +237,23 @@ app.post('/api/assignMateriaToAlumno', async (req, res) => {
         return res.status(400).json({ error: 'alumno_id y materia_id son obligatorios' });
     }
 
+    if (isNaN(alumno_id) || isNaN(materia_id)) {
+        return res.status(400).json({ error: 'alumno_id y materia_id deben ser numéricos' });
+    }
+
     try {
+        // Validacion: Revisar si el alumno existe y esta activo
+        const alumnoActivo = await pool.query('SELECT * FROM alumno WHERE id = $1 AND isactive = true', [alumno_id]);
+        if (alumnoActivo.rows.length === 0) {
+            return res.status(404).json({ error: 'El alumno no existe o está inactivo' });
+        }
+
+        // Validacion: Revisar si la materia existe
+        const materiaExiste = await pool.query('SELECT * FROM materia WHERE id = $1', [materia_id]);
+        if (materiaExiste.rows.length === 0) {
+            return res.status(404).json({ error: 'La materia no existe' });
+        }
+
         // Validación: Revisar si ya existe la relación para no duplicar
         const existe = await pool.query(
             'SELECT * FROM alumno_materia WHERE alumno_id = $1 AND materia_id = $2',
@@ -265,7 +281,17 @@ app.post('/api/assignMateriaToAlumno', async (req, res) => {
 app.get('/api/getMateriasByAlumnoId/:id', async (req, res) => {
     const alumnoId = req.params.id;
 
+    if (isNaN(alumnoId)) {
+        return res.status(400).json({ error: 'El ID del alumno debe ser numérico' });
+    }
+
     try {
+        // Validacion: Revisar si el alumno existe y esta activo
+        const alumnoActivo = await pool.query('SELECT * FROM alumno WHERE id = $1 AND isactive = true', [alumnoId]);
+        if (alumnoActivo.rows.length === 0) {
+            return res.status(404).json({ error: 'El alumno no existe o está inactivo' });
+        }
+
         const resultado = await pool.query(
             `SELECT m.id, m.nombre, m.semestre, m.creditos 
              FROM materia m
@@ -285,7 +311,17 @@ app.get('/api/getMateriasByAlumnoId/:id', async (req, res) => {
 app.get('/api/getMateriasCountByAlumnoId/:id', async (req, res) => {
     const alumnoId = req.params.id;
 
+    if (isNaN(alumnoId)) {
+        return res.status(400).json({ error: 'El ID del alumno debe ser numérico' });
+    }
+
     try {
+        // Validacion: Revisar si el alumno existe y esta activo
+        const alumnoActivo = await pool.query('SELECT * FROM alumno WHERE id = $1 AND isactive = true', [alumnoId]);
+        if (alumnoActivo.rows.length === 0) {
+            return res.status(404).json({ error: 'El alumno no existe o está inactivo' });
+        }
+
         const resultado = await pool.query(
             'SELECT COUNT(materia_id) as total_materias FROM alumno_materia WHERE alumno_id = $1',
             [alumnoId]
