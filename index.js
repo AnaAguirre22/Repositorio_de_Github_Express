@@ -368,14 +368,22 @@ app.post("/api/createVehiculo", async (req, res) => {
   try {
     const { marca, modelo, anio, color } = req.body;
     
-    // Jona: Validacion de campos obligatorios antes de guardar en Mongo
-    if (!marca || !modelo || !anio || !color) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios" });
-    }
-    // Jona el año debe ser un numero valido
-    if (isNaN(anio)) {
-      return res.status(400).json({ message: "El año debe ser numérico" });
-    }
+    // Jona: Validacion de campos obligatorios (evitando espacios vacios con trim)
+if (!marca?.trim() || !modelo?.trim() || !anio || !color?.trim()) {
+  return res.status(400).json({ 
+    status: "Error",
+    message: "Faltan campos obligatorios. Asegúrate de enviar: marca, modelo, anio y color." 
+  });
+}
+
+// Jona: El año debe ser un número válido y coherente (ej. entre 1900 y el año actual)
+const anioNumero = Number(anio);
+if (isNaN(anioNumero) || anioNumero < 1900 || anioNumero > 2027) {
+  return res.status(400).json({ 
+    status: "Error",
+    message: "El campo 'anio' debe ser un número entero válido (entre 1900 y 2027)." 
+  });
+}
 
     const nuevoVehiculo = new Vehiculo({ marca, modelo, anio, color });
     await nuevoVehiculo.save();
@@ -392,6 +400,45 @@ app.post("/api/createVehiculo", async (req, res) => {
   }
 });
 
+// Jona: Buscar vehículos por marca (Ej: /api/vehiculos/buscar?marca=toyota)
+app.get("/api/vehiculos/buscar", async (req, res) => {
+  try {
+    const { marca } = req.query;
+
+    if (!marca) {
+      return res.status(400).json({
+        status: "Error",
+        message: "Por favor, proporciona una 'marca' en la URL para realizar la búsqueda."
+      });
+    }
+
+    // Buscamos usando una expresión regular 'i' (case-insensitive: ignora mayúsculas/minúsculas)
+    const vehiculosEncontrados = await Vehiculo.find({
+      marca: { $regex: marca, $options: "i" }
+    });
+
+    if (vehiculosEncontrados.length === 0) {
+      return res.status(404).json({
+        status: "Success",
+        message: `No se encontraron vehículos de la marca: ${marca}`,
+        data: []
+      });
+    }
+
+    res.status(200).json({
+      status: "Success",
+      results: vehiculosEncontrados.length,
+      data: vehiculosEncontrados
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      status: "Error",
+      message: "Error al buscar los vehículos",
+      error: error.message
+    });
+  }
+});
 
 // ENCENDIDO LOCAL DEL SERVIDOR
 app.listen(3000, () => {
