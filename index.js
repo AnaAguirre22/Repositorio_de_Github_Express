@@ -41,8 +41,8 @@ app.get('/', (req, res) => {
 // 1. Consultar todos los alumnos que sigan activos en el sistema
 app.get('/api/getAlumnos', async (req, res) => {
   try {
-    // Usamos WHERE isactive = true para no traer a los que ya dimos de baja
-    const resultado = await pool.query('SELECT * FROM alumno WHERE isactive = true');
+    
+    const resultado = await pool.query('SELECT * FROM alumno');
     res.status(200).json({
       message: "Alumnos encontrados correctamente",
       data: resultado.rows
@@ -64,13 +64,13 @@ app.get('/api/getAlumnoById/:id', async (req, res) => {
     }
 
     const resultado = await pool.query(
-      'SELECT * FROM alumno WHERE id = $1 AND isactive = true',
+      'SELECT * FROM alumno WHERE id = $1',
       [id]
     );
 
     // Si no encontro nada avisamos
     if (resultado.rows.length === 0) {
-      return res.status(404).json({ message: 'Alumno no encontrado o inactivo' });
+      return res.status(404).json({ message: 'Alumno no encontrado' });
     }
 
     res.status(200).json({
@@ -96,7 +96,7 @@ app.get('/api/searchAlumno', async (req, res) => {
     // Le ponemos los % para que funcione el LIKE de SQL 
     const busquedaEfectiva = `%${query}%`;
     const resultado = await pool.query(
-      'SELECT * FROM alumno WHERE (nombre LIKE $1 OR apellido LIKE $1) AND isactive = true',
+      'SELECT * FROM alumno WHERE nombre LIKE $1 OR apellido LIKE $1',
       [busquedaEfectiva]
     );
 
@@ -147,9 +147,9 @@ app.put('/api/updateAlumno/:id', async (req, res) => {
     if (!nombre || !apellido || !edad || !correo) return res.status(400).json({ message: 'Todos los campos son obligatorios' });
 
     // Checamos si el alumno existe y esta activo antes de intentar actualizarlo
-    const verificar = await pool.query('SELECT * FROM alumno WHERE id = $1 AND isactive = true', [id]);
+    const verificar = await pool.query('SELECT * FROM alumno WHERE id = $1', [id]);
     if (verificar.rows.length === 0) {
-      return res.status(404).json({ message: 'El alumno no existe o está inactivo' });
+      return res.status(404).json({  message: 'El alumno no existe' });
     }
 
     const resultado = await pool.query(
@@ -174,14 +174,14 @@ app.delete('/api/deleteAlumno/:id', async (req, res) => {
 
     if (isNaN(id)) return res.status(400).json({ message: 'El ID debe ser numérico' });
 
-    // Verificamos que el alumno exista para no borrar a lo loco
-    const verificar = await pool.query('SELECT * FROM alumno WHERE id = $1 AND isactive = true', [id]);
+    // Verificamos que el alumno exista antes de realizar la baja lógica
+    const verificar = await pool.query('SELECT * FROM alumno WHERE id = $1', [id]);
     if (verificar.rows.length === 0) {
-      return res.status(404).json({ message: 'El alumno no existe o ya estaba inactivo' });
+      return res.status(404).json({  message: 'El alumno no existe' });
     }
 
     // En vez de un DELETE que borre el registro, hacemos un UPDATE para cambiar su estatus a false
-    await pool.query('UPDATE alumno SET isactive = false WHERE id = $1', [id]);
+    await pool.query('DELETE FROM alumno WHERE id = $1', [id]);
 
     res.status(200).json({
       message: "Alumno dado de baja correctamente"
@@ -203,7 +203,7 @@ app.get('/materias', async (req, res) => {
     res.json(resultado.rows);
   } catch (error) {
     console.error('Error al consultar materias:', error);
-    res.status(500).json({ error: 'Error al obtener las materias' });
+    res.status(500).json({ message: 'Error al obtener las materias' });
   }
 });
 
@@ -222,12 +222,12 @@ app.post('/materias', async (req, res) => {
       [nombre, semestre, creditos]
     );
     res.status(201).json({
-      mensaje: 'Materia insertada correctamente',
+      message: 'Materia insertada correctamente',
       materia: resultado.rows[0]
     });
   } catch (error) {
     console.error('Error al insertar materia:', error);
-    res.status(500).json({ error: 'Error al insertar la materia' });
+    res.status(500).json({ message: 'Error al insertar la materia' });
   }
 });
 
@@ -245,9 +245,9 @@ app.post('/api/assignMateriaToAlumno', async (req, res) => {
     if (isNaN(alumno_id) || isNaN(materia_id)) return res.status(400).json({ error: 'Ambos IDs deben ser numéricos' });
 
     try {
-        // ValidacioN: Revisar que el alumno no sea un fantasma y siga activo
-        const alumnoActivo = await pool.query('SELECT * FROM alumno WHERE id = $1 AND isactive = true', [alumno_id]);
-        if (alumnoActivo.rows.length === 0) return res.status(404).json({ error: 'El alumno no existe o está inactivo' });
+        // Verificamos que el alumno exista y se encuentre activo
+        const alumnoActivo = await pool.query('SELECT * FROM alumno WHERE id = $1', [alumno_id]);
+        if (alumnoActivo.rows.length === 0) return res.status(404).json({ error: 'El alumno no existe' });
 
         // Validacion: Revisar que la materia que le quieren meter si exista en el catalogo
         const materiaExiste = await pool.query('SELECT * FROM materia WHERE id = $1', [materia_id]);
@@ -280,8 +280,8 @@ app.get('/api/getMateriasByAlumnoId/:id', async (req, res) => {
     if (isNaN(alumnoId)) return res.status(400).json({ error: 'El ID debe ser numérico' });
 
     try {
-        const alumnoActivo = await pool.query('SELECT * FROM alumno WHERE id = $1 AND isactive = true', [alumnoId]);
-        if (alumnoActivo.rows.length === 0) return res.status(404).json({ error: 'El alumno no existe o está inactivo' });
+        const alumnoActivo = await pool.query('SELECT * FROM alumno WHERE id = $1', [alumnoId]);
+        if (alumnoActivo.rows.length === 0) return res.status(404).json({ error: 'El alumno no existe' });
 
         // Hacemos el JOIN para traer los nombres y datos de la materia basandonos en la tabla intermedia
         const resultado = await pool.query(
@@ -306,8 +306,8 @@ app.get('/api/getMateriasCountByAlumnoId/:id', async (req, res) => {
     if (isNaN(alumnoId)) return res.status(400).json({ error: 'El ID debe ser numérico' });
 
     try {
-        const alumnoActivo = await pool.query('SELECT * FROM alumno WHERE id = $1 AND isactive = true', [alumnoId]);
-        if (alumnoActivo.rows.length === 0) return res.status(404).json({ error: 'El alumno no existe o está inactivo' });
+        const alumnoActivo = await pool.query('SELECT * FROM alumno WHERE id = $1', [alumnoId]);
+        if (alumnoActivo.rows.length === 0) return res.status(404).json({ error: 'El alumno no existe' });
 
         // Usamos COUNT de SQL para que Postgres haga el calculo directo y no tener que contarlo nosotros
         const resultado = await pool.query(
@@ -401,7 +401,7 @@ app.get("/api/vehiculos/buscar", async (req, res) => {
       marca: { $regex: marca, $options: "i" }
     });
 
-    // Si no hay carros de esa marca, avisamos bien en vez de regresar un array vacio triste
+    // Validamos si existen vehículos registrados con la marca solicitada
     if (vehiculosEncontrados.length === 0) {
       return res.status(404).json({
         status: "Success",

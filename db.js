@@ -5,7 +5,7 @@ const pool = new Pool({
   user: 'postgres',          // El usuario por defecto de Postgres
   host: 'localhost',         // Como estamos probando en nuestras compus entonces es localhost
   database: 'react_express_db', // El nombre de la base de datos que creamos en pgAdmin
-  password: 'AuSa22_06',     // Aqui cada quien debe cambiar esto por su contraseña local antes de correrlo y para que les pueda abrir postgres
+  password: 'Allisonhtb0110',     // Aqui cada quien debe cambiar esto por su contraseña local antes de correrlo y para que les pueda abrir postgres
   port: 5432,                // El puerto de postgres
 });
 
