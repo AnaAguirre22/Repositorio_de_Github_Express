@@ -1,23 +1,21 @@
 # Repositorio_de_Github_Express
 Repositorio para actividades relacionadas a reacts, utilizando herramientas como GitHub, Node y Express.
 
-## Pruebas QA realizadas
+Proyecto Final: Sistema de Gestión Escolar y Vehicular
 
-Se realizaron pruebas funcionales en Postman para validar:
+Este proyecto corresponde al backend de un sistema integral desarrollado como trabajo final para la asignatura de Desarrollo Web del Lado del Servidor en la Universidad Autónoma de Sinaloa (UAS).
 
-- Consultas GET
-- Inserciones POST
-- Modificaciones PUT
-- Eliminaciones DELETE
-- Validaciones de IDs
-- Manejo de errores 400, 404 y 500
-- Validaciones de MongoDB y PostgreSQL
+El sistema permite la gestión de registros de alumnos (activos e inactivos), materias, inscripciones (relación alumno–materia) y una flota de vehículos de transporte. Está construido bajo una arquitectura híbrida que integra tanto bases de datos relacionales como no relacionales.
 
-## Tecnologías utilizadas
+Equipo de Desarrollo
+Aguirre Sánchez Ana — Arquitectura de Base de Datos y Líder Técnico
+Lizárraga Velarde Fátima — Especialista en Módulo de Alumnos (CRUD)
+Salazar Sánchez Jaasiel — Especialista en Módulo de Materias y Relaciones
+López Sánchez Jonathan — Especialista en Módulo de Vehículos (MongoDB)
+Tirado Barraza Allison — Calidad (QA) y Documentación
 
-- Node.js
-- Express
-- PostgreSQL
-- MongoDB
-- Mongoose
-- Postman
+Tecnologías Utilizadas
+Node.js y Express (Servidor backend)
+PostgreSQL (Base de datos relacional utilizando el paquete pg)
+MongoDB y Mongoose (Base de datos NoSQL para la colección de vehículos)
+Postman (Herramienta para pruebas y validación de la API)
